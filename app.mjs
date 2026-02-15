@@ -6,6 +6,7 @@ import cors from "cors";
 import connectionPool from "./utils/db.mjs";
 import testRoute from "./routes/testRoute.mjs";
 import healthRoute from "./routes/healthRoute.mjs";
+import postRoute from "./routes/postRoute.mjs";
 
 // INITIAL VARIABLES
 const app = express();
@@ -26,6 +27,9 @@ app.use(express.json());
 // ROUTES
 app.use("/test", testRoute);
 app.use("/health", healthRoute);
+app.use('/posts',postRoute);
+
+
 
 app.post("/assignments", async (req, res) => {
   try {
@@ -53,6 +57,11 @@ app.post("/assignments", async (req, res) => {
     });
   }
 });
+
+
+
+
+
 
 // SERVER
 app.listen(port, () => {
