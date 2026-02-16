@@ -4,7 +4,7 @@ import { Router } from "express";
 const testRoute=Router();
 
 testRoute.get("/", (req, res) => {
-  res.send("Hello TechUp!");
+  return res.status(200).json({message:"Hello TechUp!"});
 }); 
 
 export default testRoute;

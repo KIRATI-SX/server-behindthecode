@@ -1,16 +1,14 @@
 import { Router } from "express";
 
 import connectionPool from "../utils/db.mjs";
+import { validatePost } from "../middlewares/validatePost.mjs";
 
 const postRoute = Router();
 
 postRoute.get("/", async (req, res) => {
   try {
-    const { page , limit } = req.body;
-    const {category, keyword}=req.query;
-    const currentPage = Number(page) ||1;
-    const currentLimit = Number(limit) ||6;
-    const offset = (currentPage - 1) * currentLimit;
+    const { page, limit } = req.body || {};
+    const { category, keyword } = req.query;
 
     let conditions = [];
     let params = [];
@@ -32,6 +30,18 @@ postRoute.get("/", async (req, res) => {
 
     const whereClause =
       conditions.length > 0 ? ` WHERE ${conditions.join(" AND ")}` : "";
+
+    if (page === undefined && limit === undefined) {
+      const query = `SELECT * FROM posts${whereClause} ORDER BY id DESC`;
+      const result = await connectionPool.query(query, params);
+      return res.status(200).json({
+        posts: result.rows,
+      });
+    }
+
+    const currentPage = Number(page) || 1;
+    const currentLimit = Number(limit) || 6;
+    const offset = (currentPage - 1) * currentLimit;
 
     // Count total posts matching the filters
     const countQuery = `SELECT COUNT(*) FROM posts${whereClause}`;
@@ -62,7 +72,7 @@ postRoute.get("/", async (req, res) => {
 
 postRoute.get("/:postId", async (req, res) => {
   try {
-    const { id } = _req.params;
+    const id = req.params.postId;
     const query = `SELECT * FROM posts WHERE id = $1`;
     const result = await connectionPool.query(query, [id]);
 
@@ -84,7 +94,7 @@ postRoute.get("/:postId", async (req, res) => {
   }
 });
 
-postRoute.put("/:postId", async (req, res) => {
+postRoute.put("/:postId", validatePost, async (req, res) => {
   try {
     const id = req.params.postId;
     const { title, content, image, category_id, description } = req.body;
@@ -138,7 +148,7 @@ postRoute.delete("/:postId", async (req, res) => {
   }
 });
 
-postRoute.post("/", async (req, res) => {
+postRoute.post("/", validatePost, async (req, res) => {
   try {
     const { title, content, image, category_id, description } = req.body;
     const query = `INSERT INTO posts (title, content, image, category_id, description) VALUES ($1, $2, $3, $4, $5)`;
@@ -149,10 +159,10 @@ postRoute.post("/", async (req, res) => {
       category_id,
       description,
     ]);
-
+    
     return res
       .status(201)
-      .json({ message: "Post created successfully", data: result.rows });
+      .json({ message: "Post created successfully" });
   } catch (error) {
     console.log(error);
     return res.status(500).json({
